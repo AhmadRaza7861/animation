@@ -1,10 +1,17 @@
+import 'dart:io';
+
 import 'package:animation/projects_database.dart';
 import 'package:animation/screens/projects_screen.dart';
 import 'package:animation/sketch_data_base.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_archive/flutter_archive.dart';
+import 'package:get/get.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 late Box box;
 Future<void> main() async{
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +37,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: ProjectsScreen()
-      //const MyHomePage(title: 'Flutter Demo Home Page'),
+      home:
+      //ProjectsScreen()
+      const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
@@ -58,14 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+    _downloadFile("https://github.com/AhmadRaza7861/animation/raw/main/gif_cat.rar","animation");
   }
 
   @override
@@ -90,19 +91,6 @@ class _MyHomePageState extends State<MyHomePage> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
@@ -122,4 +110,68 @@ class _MyHomePageState extends State<MyHomePage> {
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
+  Future<File> _downloadFile(String url, String filename) async {
+    var status = await Permission.storage.request();
+    var client = http.Client();
+    var request = await client.get(Uri.parse(url));
+   // var response = await request;
+    //var bytes = await consolidateHttpClientResponseBytes(response);
+    var bytes = await request.bodyBytes;
+    print("Bites ${bytes}");
+    String dir = (await getApplicationDocumentsDirectory()).path;
+    Directory dirr=Directory("$dir/Sketch/SketchGifs");
+    dirr.create(recursive: true);
+    File file = File('$dir/Sketch/SketchGifs/$filename.zip');
+    print("file ${file.path}");
+    // Directory newDirectory = Directory('${file.path}');
+    // newDirectory.createSync(recursive: true);
+    await file.writeAsBytes(bytes);
+    try {
+      await ZipFile.extractToDirectory(zipFile: file, destinationDir: Directory('$dir/Sketch/SketchGifs'));
+      file.delete(recursive: true);
+    } catch (e) {
+      print(e);
+    }
+    return file;
+  }
+  // Future<File?> _downloadFile(String url, String filename) async {
+  //   try {
+  //     // Request storage permission
+  //     var status = await Permission.storage.request();
+  //
+  //     if (status.isGranted) {
+  //       var client = http.Client();
+  //       var request = await client.get(Uri.parse(url));
+  //       var bytes = request.bodyBytes;
+  //
+  //       // Get the application documents directory
+  //       Directory appDocDir = await getApplicationDocumentsDirectory();
+  //       String appDocPath = appDocDir.path;
+  //
+  //       // Create directories if they don't exist
+  //       Directory saveDir = Directory('$appDocPath/Sketch/SketchGifs');
+  //       if (!saveDir.existsSync()) {
+  //         saveDir.createSync(recursive: true);
+  //       }
+  //       print("jkjhjhj");
+  //       // Create the file path
+  //       String filePath = '$appDocPath/Sketch/SketchGifs/$filename';
+  //
+  //       // Write the file
+  //       File file = File(filePath);
+  //       await file.writeAsBytes(bytes);
+  //
+  //       print("File downloaded: ${file.path}");
+  //       return file;
+  //     } else {
+  //       // Handle denied or restricted permissions
+  //       print("Permission denied for storage");
+  //       return null;
+  //     }
+  //   } catch (e) {
+  //     // Handle other errors that might occur during the download process
+  //     print("Error downloading file: $e");
+  //     return null;
+  //   }
+  // }
 }
